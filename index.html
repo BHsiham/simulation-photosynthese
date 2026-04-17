@@ -1,99 +1,263 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    <title>Bio-Chain Interactive - Phase Claire (Optimisé Mobile)</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch@1.3.0/DragDropTouch.js"></script>
-    
-    <link rel="stylesheet" href="style.css">
-    
-    <style>
-        /* Verrouillage de l'interface pour mobile */
-        html, body {
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            touch-action: none;
-        }
+/* --- BASE & LAYOUT --- */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a1a;
+    overflow: hidden;
+    user-select: none;
+    /* Empêche le rebond et le défilement sur mobile */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
 
-        #game-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+#game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+}
 
-        /* Forcer la membrane à ne pas dépasser et à réduire les éléments */
-        .membrane {
-            display: flex !important;
-            justify-content: space-evenly !important;
-            align-items: center;
-            flex-wrap: nowrap !important; /* Interdit le passage à la ligne */
-            padding: 0 5px;
-            box-sizing: border-box;
-        }
+.zone {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    /* Force le maintien des éléments sur une ligne */
+    flex-wrap: nowrap; 
+}
 
-        .complex, .light-beam, .draggable, .draggable-product {
-            touch-action: none !important;
-            -webkit-user-drag: element;
-        }
-    </style>
-</head>
-<body>
+/* --- DESIGN DES ÉTAGES (STROMA / MEMBRANE / LUMEN) --- */
+.stroma { 
+    height: 30%; 
+    background: #fffde7; 
+    border-bottom: 2px solid #fbc02d; 
+}
 
-    <div id="game-container">
-        <div class="zone stroma" id="stroma">
-            <span class="label-zone">STROMA (pH ~8)</span>
-            
-            <div id="light-shelf" style="display: flex; gap: 5px;">
-                <div class="light-beam" id="light-green" draggable="true" style="background: #4caf50;">500nm</div>
-                <div class="light-beam" id="light-680" draggable="true" style="background: #ff5252; box-shadow: 0 0 10px #ff5252;">680nm</div>
-                <div class="light-beam" id="light-700" draggable="true" style="background: #d32f2f; box-shadow: 0 0 10px #d32f2f;">700nm</div>
-            </div>
+.membrane { 
+    height: 35%; 
+    background: linear-gradient(180deg, #66bb6a 0%, #2e7d32 50%, #66bb6a 100%);
+    border-top: 4px solid #1b5e20;
+    border-bottom: 4px solid #1b5e20;
+    z-index: 2;
+}
 
-            <div id="nadp-target" class="draggable-product" draggable="true">NADP+</div>
-        </div>
+.lumen { 
+    height: 35%; 
+    background: #e3f2fd; 
+    transition: background 1.5s ease, box-shadow 1.5s ease;
+}
 
-        <div class="zone membrane" id="membrane">
-            <div class="complex drop-target" id="ps2" title="Photosystème II">PSII</div>
-            <div class="complex drop-target" id="t1" title="Plastoquinone">T1</div>
-            <div class="complex drop-target" id="e2" title="Complexe b6f">E2</div>
-            <div class="complex drop-target" id="t2" title="Plastocyanine">T2</div>
-            <div class="complex drop-target" id="ps1" title="Photosystème I">PSI</div>
-            <div class="complex drop-target" id="t3" title="Ferrédoxine">T3</div>
-            <div class="complex drop-target" id="e3" title="NADP réductase">E3</div>
-            
-            <div class="complex" id="atp-synthase" title="ATP Synthase">ATP</div>
-        </div>
+/* État saturé quand le gradient est élevé */
+.lumen.saturated {
+    background-color: #fff9c4 !important;
+    box-shadow: inset 0 0 80px rgba(255, 235, 59, 0.4);
+}
 
-        <div class="zone lumen" id="lumen">
-            <span class="label-zone">LUMEN (pH ~5)</span>
-            <div id="h2o-source" class="draggable" draggable="true">H2O</div>
-            <div id="adp-pi" class="draggable-product" draggable="true" style="display:none; background:#ffa726; border-color: #e65100;">ADP+Pi</div>
-        </div>
+.label-zone {
+    position: absolute;
+    top: 5px;
+    left: 10px;
+    font-size: 0.9em;
+    font-weight: 900;
+    color: rgba(0,0,0,0.15);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    pointer-events: none;
+}
 
-        <div id="ui-panel">
-            <div class="controls-group">
-                <button onclick="reinitialiser()" class="btn-ui">🔄</button>
-                <button onclick="reculerEtape()" class="btn-ui">⬅️</button>
-            </div>
+/* --- COMPLEXES PROTÉIQUES --- */
+.complex {
+    width: 12%; /* Adaptabilité mobile */
+    min-width: 45px;
+    max-width: 85px;
+    height: 90px;
+    background: #43a047;
+    border: 3px solid #1b5e20;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 0.8em;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 5;
+    text-align: center;
+    /* Important pour le tactile */
+    touch-action: none;
+}
 
-            <div class="stats-group">
-                <div class="stat">ATP: <span id="atp-count">0</span></div>
-                <div class="stat">NADPH: <span id="nadph-count">0</span></div>
-            </div>
+.complex:hover { transform: scale(1.05); background: #4caf50; }
 
-            <div id="instruction-container">
-                <div id="instruction">Étape 1 : Glissez le 680nm sur le PSII.</div>
-            </div>
-        </div>
-    </div>
+/* Transporteurs mobiles */
+#t1, #t2, #t3 {
+    width: 45px; 
+    height: 45px; 
+    border-radius: 50%;
+    background: #fb8c00; 
+    border: 3px solid #e65100;
+}
 
-    <script src="script.js"></script>
-</body>
-</html>
+/* ATP Synthase spécifique */
+#atp-synthase {
+    height: 120px;
+    background: #ffb74d;
+    clip-path: polygon(20% 0%, 80% 0%, 80% 60%, 100% 60%, 100% 100%, 0% 100%, 0% 60%, 20% 60%);
+    border: none;
+    color: #5d4037;
+    padding-top: 30px;
+}
+
+/* --- PARTICULES --- */
+.proton-particle {
+    position: absolute;
+    background: #f44336;
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.7em;
+    font-weight: bold;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+    z-index: 8;
+    animation: float 3s infinite ease-in-out;
+    pointer-events: none;
+}
+
+.proton-particle.stroma-h {
+    background: #ff8a80;
+}
+
+.electron-particle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #ffeb3b;
+    color: black;
+    border-radius: 50%;
+    font-size: 0.7em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 900;
+    box-shadow: 0 0 15px #ffff00;
+    cursor: grab;
+    z-index: 20;
+    border: 2px solid #fbc02d;
+    touch-action: none;
+}
+
+/* --- ÉLÉMENTS INTERACTIFS --- */
+.light-beam, #h2o-source, .draggable-product {
+    touch-action: none; /* Désactive le scroll pour permettre le drag */
+    cursor: grab;
+    user-drag: element;
+    -webkit-user-drag: element;
+}
+
+.light-beam {
+    width: 60px;
+    height: 35px;
+    border-radius: 20px;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 5px;
+}
+
+#h2o-source, .draggable-product {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9em;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+#h2o-source { background: #2196f3; color: white; border: 2px solid #1976d2; }
+.draggable-product { background: #ce93d8; color: #4a148c; border: 2px solid #7b1fa2; }
+
+/* --- UI PANEL & BOUTONS --- */
+#ui-panel {
+    background: #111;
+    color: white;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap; /* Permet le passage à la ligne sur petit écran */
+    justify-content: space-around;
+    align-items: center;
+    border-top: 3px solid #333;
+    min-height: 80px;
+}
+
+.controls-group, .stats-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 5px;
+}
+
+.btn-ui {
+    background: #333;
+    color: white;
+    border: 1px solid #555;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+.stat {
+    font-family: monospace;
+    font-size: 1em;
+    background: #222;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border-left: 3px solid #4caf50;
+    white-space: nowrap;
+}
+
+#instruction {
+    font-size: 0.9em;
+    width: 100%;
+    text-align: center;
+    font-style: italic;
+    color: #ffd740;
+    margin-top: 5px;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.pumping-animation {
+    animation: pumpMove 1s forwards ease-in;
+}
+
+@keyframes pumpMove {
+    0% { transform: translateY(-80px); opacity: 0; }
+    30% { opacity: 1; }
+    100% { transform: translateY(50px); opacity: 1; }
+}
+
+.spin-enzyme {
+    animation: spin 0.5s linear;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
