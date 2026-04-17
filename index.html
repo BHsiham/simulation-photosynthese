@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>Bio-Chain Interactive - Phase Claire (Optimisé Mobile)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch@1.3.0/DragDropTouch.js"></script>
@@ -10,18 +10,37 @@
     <link rel="stylesheet" href="style.css">
     
     <style>
-        /* Correction cruciale pour Mobile : empêche le "scroll" pendant qu'on glisse un élément */
-        .light-beam, .draggable, .draggable-product, .electron-particle, .complex {
-            touch-action: none !important;
-            -webkit-user-drag: element;
-        }
-        
-        /* Ajustement pour que le conteneur prenne bien tout l'écran mobile */
-        body {
+        /* Verrouillage de l'interface pour mobile */
+        html, body {
             overflow: hidden;
             position: fixed;
             width: 100%;
             height: 100%;
+            margin: 0;
+            padding: 0;
+            touch-action: none;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Forcer la membrane à ne pas dépasser et à réduire les éléments */
+        .membrane {
+            display: flex !important;
+            justify-content: space-evenly !important;
+            align-items: center;
+            flex-wrap: nowrap !important; /* Interdit le passage à la ligne */
+            padding: 0 5px;
+            box-sizing: border-box;
+        }
+
+        .complex, .light-beam, .draggable, .draggable-product {
+            touch-action: none !important;
+            -webkit-user-drag: element;
         }
     </style>
 </head>
@@ -31,7 +50,7 @@
         <div class="zone stroma" id="stroma">
             <span class="label-zone">STROMA (pH ~8)</span>
             
-            <div id="light-shelf">
+            <div id="light-shelf" style="display: flex; gap: 5px;">
                 <div class="light-beam" id="light-green" draggable="true" style="background: #4caf50;">500nm</div>
                 <div class="light-beam" id="light-680" draggable="true" style="background: #ff5252; box-shadow: 0 0 10px #ff5252;">680nm</div>
                 <div class="light-beam" id="light-700" draggable="true" style="background: #d32f2f; box-shadow: 0 0 10px #d32f2f;">700nm</div>
@@ -49,30 +68,28 @@
             <div class="complex drop-target" id="t3" title="Ferrédoxine">T3</div>
             <div class="complex drop-target" id="e3" title="NADP réductase">E3</div>
             
-            <div class="complex" id="atp-synthase" title="ATP Synthase">ATP Synthase</div>
+            <div class="complex" id="atp-synthase" title="ATP Synthase">ATP</div>
         </div>
 
         <div class="zone lumen" id="lumen">
             <span class="label-zone">LUMEN (pH ~5)</span>
-            
             <div id="h2o-source" class="draggable" draggable="true">H2O</div>
-            
-            <div id="adp-pi" class="draggable-product" draggable="true" style="display:none; background:#ffa726; border-color: #e65100;">ADP + Pi</div>
+            <div id="adp-pi" class="draggable-product" draggable="true" style="display:none; background:#ffa726; border-color: #e65100;">ADP+Pi</div>
         </div>
 
         <div id="ui-panel">
             <div class="controls-group">
-                <button onclick="reinitialiser()" class="btn-ui">🔄 Réinitialiser</button>
-                <button onclick="reculerEtape()" class="btn-ui">⬅️ Reculer</button>
+                <button onclick="reinitialiser()" class="btn-ui">🔄</button>
+                <button onclick="reculerEtape()" class="btn-ui">⬅️</button>
             </div>
 
             <div class="stats-group">
-                <div class="stat">ATP : <span id="atp-count">0</span></div>
-                <div class="stat">NADPH,H+ : <span id="nadph-count">0</span></div>
+                <div class="stat">ATP: <span id="atp-count">0</span></div>
+                <div class="stat">NADPH: <span id="nadph-count">0</span></div>
             </div>
 
             <div id="instruction-container">
-                <div id="instruction">Étape 1 : Glissez le faisceau 680nm sur le PSII pour commencer.</div>
+                <div id="instruction">Étape 1 : Glissez le 680nm sur le PSII.</div>
             </div>
         </div>
     </div>
